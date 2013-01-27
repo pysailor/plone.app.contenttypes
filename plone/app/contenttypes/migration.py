@@ -26,6 +26,7 @@ from zope.component import getUtility
 from zope.intid.interfaces import IIntIds
 from Products.CMFCore.utils import getToolByName
 from plone.dexterity.interfaces import IDexterityContent
+from persistent.list import PersistentList
 
 
 def migrate(portal, migrator):
@@ -48,8 +49,8 @@ def restoreReferences(portal):
         try:
             refobjs = [uuidToObject(uuid) for uuid in obj._relatedItems]
             #obj.relatedItems(refobjs)
-            if not hasattr(obj, 'relatedItems'):
-                obj.relatedItems = []
+            if not getattr(obj, 'relatedItems', False):
+                obj.relatedItems = PersistentList()
             for uuid in obj._relatedItems:
                 to_obj = uuidToObject(uuid)
                 to_id = intids.getId(to_obj)
@@ -66,8 +67,8 @@ def restoreReferences(portal):
                 # Dexterity and
                 if IDexterityContent.providedBy(backrefobj):
                     #backrefobj.relatedItems(obj)
-                    if not hasattr(backrefobj, 'relatedItems'):
-                        backrefobj.relatedItems = []
+                    if not getattr(backrefobj, 'relatedItems', False):
+                        backrefobj.relatedItems = PersistentList()
                     to_id = intids.getId(obj)
                     backrefobj.relatedItems.append(RelationValue(to_id))
             
