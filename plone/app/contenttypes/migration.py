@@ -10,7 +10,8 @@ you catch ImportErrors
 from StringIO import StringIO
 
 from Products.CMFPlone.utils import safe_unicode
-from Products.contentmigration.basemigrator.migrator import CMFItemMigrator
+from Products.contentmigration.basemigrator.migrator import (CMFFolderMigrator,
+                                                             CMFItemMigrator)
 from Products.contentmigration.basemigrator.walker import CatalogWalker
 
 from plone.app.textfield.value import RichTextValue
@@ -48,7 +49,6 @@ def restoreReferences(portal):
         # refs
         try:
             refobjs = [uuidToObject(uuid) for uuid in obj._relatedItems]
-            #obj.relatedItems(refobjs)
             if not getattr(obj, 'relatedItems', False):
                 obj.relatedItems = PersistentList()
             for uuid in obj._relatedItems:
@@ -66,7 +66,6 @@ def restoreReferences(portal):
             for backrefobj in backrefobjs:
                 # Dexterity and
                 if IDexterityContent.providedBy(backrefobj):
-                    #backrefobj.relatedItems(obj)
                     if not getattr(backrefobj, 'relatedItems', False):
                         backrefobj.relatedItems = PersistentList()
                     to_id = intids.getId(obj)
@@ -123,7 +122,7 @@ def migrate_documents(portal):
 class FileMigrator(CMFItemMigrator, ReferenceMigrator):
 
     src_portal_type = 'File'
-    src_meta_type = 'AT File'
+    src_meta_type = 'ATFile'
     dst_portal_type = 'File'
     dst_meta_type = None  # not used
 
@@ -143,7 +142,7 @@ def migrate_files(portal):
 class ImageMigrator(CMFItemMigrator, ReferenceMigrator):
 
     src_portal_type = 'Image'
-    src_meta_type = 'AT Image'
+    src_meta_type = 'ATImage'
     dst_portal_type = 'Image'
     dst_meta_type = None  # not used
 
@@ -164,7 +163,7 @@ def migrate_images(portal):
 class LinkMigrator(CMFItemMigrator, ReferenceMigrator):
 
     src_portal_type = 'Link'
-    src_meta_type = 'AT Link'
+    src_meta_type = 'ATLink'
     dst_portal_type = 'Link'
     dst_meta_type = None  # not used
 
@@ -196,3 +195,15 @@ class NewsItemMigrator(ImageMigrator, DocumentMigrator, ReferenceMigrator):
 
 def migrate_newsitems(portal):
     return migrate(portal, NewsItemMigrator)
+
+
+class FolderMigrator(CMFFolderMigrator, ReferenceMigrator):
+
+    src_portal_type = 'Folder'
+    src_meta_type = 'ATFolder'
+    dst_portal_type = 'Folder'
+    dst_meta_type = None  # not used
+
+
+def migrate_folders(portal):
+    return migrate(portal, FolderMigrator)

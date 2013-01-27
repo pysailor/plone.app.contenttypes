@@ -1,3 +1,6 @@
+from collections import Counter
+from pprint import pformat
+
 from plone.dexterity.interfaces import IDexterityContent
 
 from Products.CMFCore.utils import getToolByName
@@ -6,6 +9,7 @@ from Products.Five.browser import BrowserView
 # Old interfaces
 from Products.ATContentTypes.interfaces.document import IATDocument
 from Products.ATContentTypes.interfaces.file import IATFile
+from Products.ATContentTypes.interfaces.folder import IATFolder
 from Products.ATContentTypes.interfaces.image import IATImage
 from Products.ATContentTypes.interfaces.link import IATLink
 from Products.ATContentTypes.interfaces.news import IATNewsItem
@@ -72,7 +76,6 @@ class FixBaseClasses(BrowserView):
 class MigrateFromATContentTypes(BrowserView):
 
     def __call__(self):
-
         if not HAS_ATCT_MIGRATION:
             msg = ('You want to migrate ATContentType object to '
                    'plone.app.contetntypes objects, but we can not '
@@ -80,11 +83,18 @@ class MigrateFromATContentTypes(BrowserView):
                    'You can fix that by installing plone.app.contenttypes '
                    'with the extra_requires [migrate_atct]')
             return msg
+
+        stats_before = 'State before:\n'
+        stats_before += self.stats()
         portal = self.context
-        
+
         # Check whether and of the default content types have had their
         # schemas extended
         not_migrated = []
+        if not self._isSchemaExtended(IATFolder):
+            migration.migrate_folders(portal)
+        else:
+            not_migrated.append("Folder")
         if not self._isSchemaExtended(IATDocument):
             migration.migrate_documents(portal)
         else:
@@ -114,9 +124,17 @@ class MigrateFromATContentTypes(BrowserView):
                    "archetypes.schemaextender): \n %s" 
                    % "\n".join(not_migrated))
         else:
-            msg = "Default content types successfully migrated"
+            msg = "Default content types successfully migrated\n\n"
+
+        msg += '\n-----------------------------\n'
+        msg += stats_before
+        msg += '\n-----------------------------\n'
+        msg += 'Stats after:\n'
+        msg += self.stats()
+        msg += '\n-----------------------------\n'
+        msg += 'migration done - somehow. Be careful!'
         return msg
-    
+
     def _isSchemaExtended(self, interface):
         sm = getGlobalSiteManager()
         extender_interfaces = [
@@ -133,3 +151,8 @@ class MigrateFromATContentTypes(BrowserView):
             if adapter.provided in extender_interfaces:
                 return True
         return False
+
+    def stats(self):
+        cat = self.context.portal_catalog
+        counter = Counter([b.getObject().__class__.__name__ for b in cat()])
+        return pformat(sorted(counter.items()))
